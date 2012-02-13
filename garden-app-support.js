@@ -7,19 +7,41 @@ function getGravatar(userCtx, size) {
     if (!size) size = 16
 
     return gravatar.avatarURL({
-        email : userCtx.userCtx.name,
+        email : userCtx.name,
         size : size,
         default_image : 'mm'
     });
 }
 
+var user_click = function() {
+    var user_a = $(this);
 
+    if ($('#garden-nav .name').is(':visible')) {
+        return true; // user has clicked login link
+    }
+
+    if ($('#garden-profile').is(":visible")) {
+        user_a.removeClass('show');
+        $('#garden-profile').hide();
+    } else {
+        user_a.addClass('show');
+        $('#garden-profile').show();
+        setTimeout(function(){
+            $(document).one('click', function() {
+                user_a.removeClass('show');
+                $('#garden-profile').hide();
+            });
+        }, 20)
+
+    }
+    return false;
+}
 
 function createGardenNav($, settings) {
     var url = bestDashboardURL(settings.pathname);
     var login = bestLoginURL(settings.pathname);
 
-    var template = $('<div id="garden-nav"><a  href="' + url + '" class="help home-icon"  title="Garden Dashboard" ></a><a href="' + login + '" class="user"><div class="name">Sign In</div> <img src="static/css/img/mm.jpg" /></a></div>');
+    var template = $('<div id="garden-nav"><a  href="' + url + '" class="help home-icon"  title="Garden Dashboard" ></a><a href="' + login + '" class="user"><div class="name" style="display: none;">Sign In</div> <img src="static/css/img/mm.jpg" /></a></div>');
     var home = template.find('a.home-icon');
     var user = template.find('a.user');
     var name = user.find('div.name');
@@ -42,6 +64,11 @@ function createGardenNav($, settings) {
 
     var imgtop = Math.floor( (settings.navBarHeight - 12) / 2 ) - 1;
     img.css('padding-top', pdtop + 'px');
+
+
+    $('#garden-nav a.user').live('click', user_click);
+
+
 }
 
 
@@ -53,7 +80,7 @@ function createProfilePopover($, userCtx, settings) {
     var logout_url   = bestLogoutURL(settings.pathname);
 
 
-    var template = $('<div id="garden-profile"><img src="'+ gravatar_url +'"/> <div class="info"><h4>'+ userCtx.userCtx.name +'</h4><ul><li><a href="' + profile_url+ '">Profile</a></li><li><a href="'+ logout_url +'">Logout</a></li></ul></div></div>');
+    var template = $('<div id="garden-profile"><img src="'+ gravatar_url +'"/> <div class="info"><h4>'+ userCtx.name +'</h4><ul><li><a href="' + profile_url+ '">Profile</a></li><li><a href="'+ logout_url +'">Logout</a></li></ul></div></div>');
 
     template.appendTo('body');
     // adjust based on nav height
@@ -85,7 +112,7 @@ function bestLoginURL(pathname) {
 }
 
 function bestProfileURL(pathname, userCtx) {
-    var user = encodeURIComponent(userCtx.userCtx.name);
+    var user = encodeURIComponent(userCtx.name);
     var root = bestRootURL(pathname);
     return root + '#/profile/' + user;
 }
@@ -100,23 +127,7 @@ function bestLogoutURL(pathname) {
 
 
 
-var user_click = function() {
-    var user_a = $(this);
 
-    if ($('#garden-profile').is(":visible")) {
-        user_a.removeClass('show');
-        $('#garden-profile').hide();
-    } else {
-        user_a.addClass('show');
-        $('#garden-profile').show();
-
-        $('body').one('click', function() {
-            user_a.removeClass('show');
-            $('#garden-profile').hide();
-        });
-    }
-    return false;
-}
 
 
 function inGardenRewriteMode(pathname) {
@@ -125,21 +136,25 @@ function inGardenRewriteMode(pathname) {
 }
 
 function addUserCtx($, userCtx, settings) {
-    if (userCtx.userCtx.name) {
+     if (userCtx && userCtx.name) {
         var gravatarURL = getGravatar(userCtx, 16);
         var img = $('#garden-nav .user img');
 
         img.attr('src', gravatarURL).show();
 
         var link = img.closest('a');
-        link.attr('href', '#')
-            .click(user_click);
+        link.attr('href', '#');
 
         $('#garden-nav .user .name').hide();
         var gardenProfile = $('#garden-profile');
         if (gardenProfile.length == 0) {
             createProfilePopover($, userCtx, settings);
         }
+    } else {
+        var img = $('#garden-nav .user img').hide();
+
+        var login = bestLoginURL(settings.pathname);
+         $('#garden-nav .user .name').show().closest('a').attr('href', login);
     }
 
 
@@ -164,10 +179,23 @@ exports.navMenu = function($, options) {
     if (gardenNav.length == 0) {
         createGardenNav($, settings);
     }
-    session.info(function(err, userCtx) {
-        addUserCtx($, userCtx, settings);
+    var haveUserCtx = false;
 
-    })
+
+    session.on('change', function (userCtx) {
+        haveUserCtx = true;
+        addUserCtx($, userCtx, settings);
+    });
+
+    setTimeout(function(){
+        if (haveUserCtx) return;
+        session.info(function(err, userCtx) {
+            userCtx = userCtx.userCtx; // normalize equiv to change
+            addUserCtx($, userCtx, settings);
+
+        })
+    }, 100);
+
 
 
 
