@@ -47,9 +47,13 @@ function createGardenNav($, settings) {
 
 
 function createProfilePopover($, userCtx, settings) {
-    console.log('create profile');
+
     var gravatar_url = getGravatar(userCtx, 96);
-    var template = $('<div id="garden-profile"><img src="'+ gravatar_url +'"/> <div class="info"><h4>'+ userCtx.userCtx.name +'</h4><ul><li><a href="#">Profile</a></li><li><a href="#">Logout</a></li></ul></div></div>');
+    var profile_url  = bestProfileURL(settings.pathname, userCtx);
+    var logout_url   = bestLogoutURL(settings.pathname);
+
+
+    var template = $('<div id="garden-profile"><img src="'+ gravatar_url +'"/> <div class="info"><h4>'+ userCtx.userCtx.name +'</h4><ul><li><a href="' + profile_url+ '">Profile</a></li><li><a href="'+ logout_url +'">Logout</a></li></ul></div></div>');
 
     template.appendTo('body');
     // adjust based on nav height
@@ -60,33 +64,57 @@ function createProfilePopover($, userCtx, settings) {
 
 
 
-
+function bestRootURL(pathname) {
+    var url = "/dashboard/_design/dashboard/_rewrite/";
+    if (inGardenRewriteMode(pathname)) {
+            url = "/";
+    }
+    return url;
+}
 
 
 function bestDashboardURL(pathname) {
-    var url = "/dashboard/_design/dashboard/_rewrite/";
-    if (inGardenRewriteMode(pathname)) {
-        url = "/#/dashboard";
-    }
-    return url;
+    var root = bestRootURL(pathname);
+    return root + '#/dashboard'
 }
 
 function bestLoginURL(pathname) {
-
     var redirect = encodeURIComponent(pathname);
-
-    var url = "/dashboard/_design/dashboard/_rewrite/#/login/redirect/" + redirect;
-    if (inGardenRewriteMode(pathname)) {
-        url = "/#/login/redirect/" + redirect;
-    }
-    return url;
+    var root = bestRootURL(pathname);
+    return root + '#/login/redirect/' + redirect;
 }
+
+function bestProfileURL(pathname, userCtx) {
+    var user = encodeURIComponent(userCtx.userCtx.name);
+    var root = bestRootURL(pathname);
+    return root + '#/profile/' + user;
+}
+
+function bestLogoutURL(pathname) {
+    var root = bestRootURL(pathname);
+    return root + '#/logout';
+}
+
+
+
+
 
 
 var user_click = function() {
     var user_a = $(this);
-    user_a.addClass('show');
-    $('#garden-profile').show();
+
+    if ($('#garden-profile').is(":visible")) {
+        user_a.removeClass('show');
+        $('#garden-profile').hide();
+    } else {
+        user_a.addClass('show');
+        $('#garden-profile').show();
+
+        $('body').one('click', function() {
+            user_a.removeClass('show');
+            $('#garden-profile').hide();
+        });
+    }
     return false;
 }
 
