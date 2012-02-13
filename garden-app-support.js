@@ -41,7 +41,7 @@ function createGardenNav($, settings) {
     var url = bestDashboardURL(settings.pathname);
     var login = bestLoginURL(settings.pathname);
 
-    var template = $('<div id="garden-nav"><a  href="' + url + '" class="help home-icon"  title="Garden Dashboard" ></a><a href="' + login + '" class="user"><div class="name" style="display: none;">Sign In</div> <img src="static/css/img/mm.jpg" /></a></div>');
+    var template = $('<div id="garden-nav"><a  href="' + url + '" class="home-icon"  title="Dashboard" ></a><a href="' + login + '" class="user"><div class="name" style="display: none;">Sign In</div> <img src="static/css/img/mm.jpg" /></a></div>');
     var home = template.find('a.home-icon');
     var user = template.find('a.user');
     var name = user.find('div.name');
@@ -102,7 +102,7 @@ function bestRootURL(pathname) {
 
 function bestDashboardURL(pathname) {
     var root = bestRootURL(pathname);
-    return root + '#/dashboard'
+    return root + '#/apps'
 }
 
 function bestLoginURL(pathname) {
